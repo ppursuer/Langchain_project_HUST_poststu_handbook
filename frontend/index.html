@@ -96,7 +96,72 @@
             toggle.classList.toggle('expanded');
         }
 
-        function addMessage(role, content, references = null) {
+        function mergePaths(paths) {
+            // 构建前缀树
+            const prefixTree = {};
+            
+            paths.forEach(path => {
+                const parts = path.split(' > ').map(p => p.trim());
+                let current = prefixTree;
+                parts.forEach((part, idx) => {
+                    if (!current[part]) {
+                        current[part] = { _children: {}, _count: 0, _isLeaf: false };
+                    }
+                    current[part]._count++;
+                    if (idx === parts.length - 1) {
+                        current[part]._isLeaf = true;
+                    }
+                    current = current[part]._children;
+                });
+            });
+            
+            // 递归构建树
+            function buildTree(node, currentPath = []) {
+                const result = [];
+                const entries = Object.entries(node).filter(([key]) => key !== '_children' && key !== '_count' && key !== '_isLeaf');
+                
+                if (entries.length === 0) {
+                    return result;
+                }
+                
+                if (entries.length === 1) {
+                    const [key, value] = entries[0];
+                    const newPath = [...currentPath, key];
+                    
+                    if (value._isLeaf && Object.keys(value._children).length === 0) {
+                        result.push(newPath.join(' > '));
+                    } else {
+                        result.push(...buildTree(value._children, newPath));
+                    }
+                } else {
+                    // 多个分支，需要合并叶子节点
+                    const leaves = [];
+                    const branches = [];
+                    
+                    entries.forEach(([key, value]) => {
+                        if (value._isLeaf && Object.keys(value._children).length === 0) {
+                            leaves.push(key);
+                        } else {
+                            branches.push([key, value]);
+                        }
+                    });
+                    
+                    if (leaves.length > 0) {
+                        result.push([...currentPath, leaves.join('、')].join(' > '));
+                    }
+                    
+                    branches.forEach(([key, value]) => {
+                        result.push(...buildTree(value._children, [...currentPath, key]));
+                    });
+                }
+                
+                return result;
+            }
+            
+            return buildTree(prefixTree);
+        }
+
+        function addMessage(role, content, references = null, used_references = null) {
             const emptyState = chatContainer.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
 
@@ -104,21 +169,16 @@
             messageDiv.className = `message ${role}-message`;
 
             if (role === 'assistant') {
-                let sourcesLine = '';
                 let answerContent = content;
 
                 const sourcesMatch = content.match(/参考资料来源：[\s\S]*$/);
                 if (sourcesMatch) {
-                    sourcesLine = `<div class="sources-line"><strong>📚 参考资料来源：</strong>${sourcesMatch[0].replace('参考资料来源：', '').trim()}</div>`;
                     answerContent = content.replace(/参考资料来源：[\s\S]*$/, '').trim();
                 }
 
                 let html = `<div class="answer-content">${marked.parse(answerContent)}</div>`;
 
-                if (sourcesLine) {
-                    html += sourcesLine;
-                }
-
+                // 显示所有检索到的参考资料
                 if (references && references.length > 0) {
                     html += '<div class="references-section">';
                     html += '<h4>📄 参考资料</h4>';
@@ -182,7 +242,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    addMessage('assistant', data.answer, data.references);
+                    addMessage('assistant', data.answer, data.references, data.used_references);
                 } else {
                     addMessage('assistant', '查询失败，请稍后重试。');
                 }
