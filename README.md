@@ -1,4 +1,4 @@
-# 华中科技大学研究生手册智能助手 - RAG系统
+# 华中科技大学研究生手册智能助手 - local-version
 
 基于Retrieval-Augmented Generation (RAG) 技术的智能问答系统，用于回答华中科技大学研究生手册相关问题。
 
