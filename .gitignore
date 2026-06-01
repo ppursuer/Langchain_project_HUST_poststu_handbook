@@ -44,9 +44,9 @@ Thumbs.db
 .env.local
 
 # Data files (large files)
-data/*.md
-data/*.json
-data/*.jsonl
+# data/*.md
+# data/*.json
+# data/*.jsonl
 
 # Legacy code (optional, uncomment to exclude)
 # legacy/
