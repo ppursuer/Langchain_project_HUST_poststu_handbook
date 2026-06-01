@@ -1,0 +1,11 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+langchain==0.3.0
+langchain-core==0.3.0
+langchain-openai==0.2.0
+langchain-community==0.3.0
+langchain-qdrant==0.2.0
+qdrant-client==1.11.0
+jieba==0.42.1
+requests==2.32.3
+pydantic==2.9.0
